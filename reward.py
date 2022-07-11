@@ -1,15 +1,35 @@
+import copy
 import random
+
+# 应该是有两种不同的负回报
+# 一个成功一个失败，-1
+# 两个都失败 -2
 
 # slot[A] : [是否有占用， 剩余占用时间，调制格式-Modulation]
 slot = {'0': [0, 0, 'M'], '1': [0, 0, 'M'], '2': [0, 0, 'M'], '3': [0, 0, 'M'], '4': [0, 0, 'M'], '5': [0, 0, 'M'], '6': [0, 0, 'M'], '7': [0, 0, 'M']} # 这个也得是drl先给一个初始值
 timer = 0 # 这个是drl给的
 action = [7, 7] # 这个也是drl给的
-def action_to_reward(action, timer):
+def action_to_reward(action, slot):
     requests = [random.randrange(1, 5, 1), random.randrange(1, 5, 1)] # 这个环境自己产生的
+    reward = 0
+    a = [x for x in slot.values()]
+    slot1 = []
+    for i in a:
+        slot1.append(i[0])
+    if action[0] == action[1]:
+        reward = -1
+    else:
+
+        if slot[str(action[0])][0] == 1:
+            reward = -1
+        elif slot[str(action[1])][0] == 1:
+            reward = -1
+        else:
+        for i in range(len(a)):
 
 
 
-    return requests
+    return [requests, reward, slot]
 
 
 
