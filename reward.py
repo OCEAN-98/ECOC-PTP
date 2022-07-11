@@ -1,10 +1,22 @@
 import random
 
+# slot[A] : [是否有占用， 剩余占用时间，调制格式-Modulation]
+slot = {'0': [0, 0, 'M'], '1': [0, 0, 'M'], '2': [0, 0, 'M'], '3': [0, 0, 'M'], '4': [0, 0, 'M'], '5': [0, 0, 'M'], '6': [0, 0, 'M'], '7': [0, 0, 'M']} # 这个也得是drl先给一个初始值
+timer = 0 # 这个是drl给的
+action = [7, 7] # 这个也是drl给的
+def action_to_reward(action, timer):
+    requests = [random.randrange(1, 5, 1), random.randrange(1, 5, 1)] # 这个环境自己产生的
 
-# slot[A] : [是否有占用， 剩余占用时间，调制格式]
-slot = {'A': [0, 0, 'M'], 'B': [0, 0, 'M'], 'C': [0, 0, 'M'], 'D': [0, 0, 'M'], 'E': [0, 0, 'M'], 'F': [0, 0, 'M'], 'G': [0, 0, 'M'], 'H': [0, 0, 'M']}
-timer = 0
-requests = {}
+
+
+    return requests
+
+
+
+
+
+
+
 
 how_long_to_use = random.randrange(0, 4)
 
