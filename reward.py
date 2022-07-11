@@ -15,17 +15,20 @@ def action_to_reward(action, slot):
     a = [x for x in slot.values()]
     slot1 = []
     for i in a:
-        slot1.append(i[0])
-    if action[0] == action[1]:
-        reward = -1
-    else:
+        slot1.append(i[0]) # 这里是记录 这一个timer的slot占用状态
+        # 注意 下一个timer的slot的占用状态是 取决于这个action有没有成功的，有可能一个成功，也可能都成功，也可能都失败
+    # if action[0] == action[1]:
+    #
+    #     reward = -1
+    # else:
 
-        if slot[str(action[0])][0] == 1:
-            reward = -1
-        elif slot[str(action[1])][0] == 1:
-            reward = -1
-        else:
-        for i in range(len(a)):
+    if slot[str(action[0])][0] == 1 and slot[str(action[1])][0] == 1: # 两个都选择了已经被占用的，所以都不行
+        reward = -2
+    elif slot[str(action[0])][0] == 1 and slot[str(action[1])][0] == 0: # A不行，B可以
+        reward = -1
+    elif slot[str(action[0])][0] == 0 and slot[str(action[1])][0] == 1: # A可以，B不行
+        reward = -1
+    elif action[0] == action[1] and slot[str(action[0])][0] == 0: # 此时原本两个都可以，但是动作一致
 
 
 
