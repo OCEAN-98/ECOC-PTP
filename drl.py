@@ -63,7 +63,6 @@ class MultiAgentReplayBuffer:  # 每个actor有partial state； 而中央控制�
             actor_states.append(self.actor_state_memory[agent_index][x: x + self.batch_size]) # 从第i个agent的50000个选300个
             actor_new_states.append(self.actor_new_state_memory[agent_index][x: x + self.batch_size])
             # actions.append(self.actor_action_memory[agent_index][x: x + self.batch_size])
-
         return actor_states, states, actions, rewards, actor_new_states, states_
 
     def ready(self):
@@ -78,7 +77,7 @@ class CriticNetwork(nn.Module):
 
         self.chkpt_file = os.path.join(chkpt_dir, name)
 
-        self.fc1 = nn.Linear(26 + 16, fc1_dims)
+        self.fc1 = nn.Linear(26 + 32, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.q = nn.Linear(fc2_dims, 1)
 
@@ -86,7 +85,7 @@ class CriticNetwork(nn.Module):
 
     def forward(self, state, action):
         state = state.view(-1, 26)
-        action = action.view(-1, 16)  # action是onehot？ 对，softmax输出对pi
+        action = action.view(-1, 32)  # action是onehot？ 对，softmax输出对pi
         x = F.relu(self.fc1(T.cat((state, action), dim=1)))
         x = F.relu(self.fc2(x))
         q = self.q(x)
@@ -284,13 +283,13 @@ epsilon = copy.deepcopy(INITIAL_EPSILON)
 
 # 这个maddpg_agents是关键
 maddpg_agents = MADDPG(actor_dims, critic_dims, n_agents, n_actions, chkpt_dir)
-memory = MultiAgentReplayBuffer(10, critic_dims, actor_dims, n_actions, n_agents, batch_size=5)
+memory = MultiAgentReplayBuffer(100, critic_dims, actor_dims, n_actions, n_agents, batch_size=50)
 
 # evaluate = False  # 用于训练完了之后看看模型效果的, 或者继续训练
 timer = 0
-Observe = 20
-Explore = 50
-Train = 300
+Observe = 200
+Explore = 50000
+Train = 30000
 # if evaluate:
 #     maddpg_agents.load_checkpoint()
 requests = [random.randrange(1, 5, 1), random.randrange(1, 5, 1)] # 初始化第一步
@@ -298,7 +297,7 @@ slot = {'0': [0, 0, 'M'], '1': [0, 0, 'M'], '2': [0, 0, 'M'], '3': [0, 0, 'M'], 
 # 初始化第一步
 [s, two_actions, r, next_s, requests_next] = action_to_reward([15, 7], slot, requests) # 第一个动作随便选择的
 state = s # 预先激活的点，请求的内容
-obs = [s, s, s]  # 每个的状态；state是最后输入评论员的
+obs = [s, s]  # 每个的状态；state是最后输入评论员的
 rewarddd = []  # 用户rewrd的画图
 
 while timer < Observe:
@@ -368,6 +367,7 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
             action_[rangdom_pick_action] = 1
             actions_2.append(action_)
             action_index.append(rangdom_pick_action)
+            learn = 0
     else:
         acts = maddpg_agents.choose_action(obs)  # 所有actor的动作
         acts = list(acts)
@@ -379,6 +379,10 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
             action_[ac_index] = 1
             actions_2.append(action_)
             action_index.append(ac_index)
+
+    if epsilon > FINAL_EPSILON and timer > Observe:
+        epsilon = epsilon - ((INITIAL_EPSILON - FINAL_EPSILON) / (Explore))
+
     [s, three_actions, r, next_s, requests_next] = action_to_reward(action_index, slot, requests_next)
     obs = [s, s]
     state = s
@@ -390,7 +394,6 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
     timer += 1
     loss = []
     actor_states, states, actions, rewards, actor_new_states, states_ = memory.sample_buffer()
-    # print(len(actions))
 
     actions = T.tensor(actions, dtype=T.float)
     states = T.tensor(states, dtype=T.float)
@@ -401,7 +404,7 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
     # print(action1)
     all_agents_new_actions = []  # [[batch * 20],[],,,]
     all_agents_new_mu_actions = []
-    print(actor_new_states)
+
     for agent_idx in range(len(maddpg_agents.agents)):
         new_states = T.tensor(actor_new_states[agent_idx], dtype=T.float)
         new_pi = maddpg_agents.agents[agent_idx].target_actor.forward(new_states)
@@ -410,9 +413,9 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
         pi = maddpg_agents.agents[agent_idx].actor.forward(mu_states)
         all_agents_new_mu_actions.append(pi)
 
-    print(len(all_agents_new_actions))
-    # new_actions = T.cat([acts for acts in all_agents_new_actions], dim=1)
-    # print(len(new_actions))
+    # print(len(all_agents_new_actions))
+    new_actions = T.cat([acts for acts in all_agents_new_actions], dim=1)
+
     mu = T.cat([acts for acts in all_agents_new_mu_actions], dim=1)
 
     xxx = 0
@@ -470,9 +473,9 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
 
 
 # plot the figure
-check_data_reward = pd.read_csv('/Users/ocean/git/ECOC-PTP/multi-agent/Results/data_reward')
-r = check_data_reward['reward']
-plt.plot(r)
+# check_data_reward = pd.read_csv('/Users/ocean/git/ECOC-PTP/multi-agent/Results/data_reward')
+# r = check_data_reward['reward']
+# plt.plot(r)
 
 
 
