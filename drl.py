@@ -57,8 +57,8 @@ class MultiAgentReplayBuffer:  # 每个actor有partial state； 而中央控制�
         states_ = self.new_state_memory[x: x + self.batch_size]
         rewards = self.reward_memory[x: x + self.batch_size]
         actions = self.action_memory[x: x + self.batch_size]
-        actor_states = [[], [], []]
-        actor_new_states = [[], [], []]
+        actor_states = []
+        actor_new_states = []
         for agent_index in range(self.n_agents):
             actor_states.append(self.actor_state_memory[agent_index][x: x + self.batch_size]) # 从第i个agent的50000个选300个
             actor_new_states.append(self.actor_new_state_memory[agent_index][x: x + self.batch_size])
@@ -331,7 +331,7 @@ while timer < Observe:
 #
 #
     if timer % 5 == 0:  # 4500的话是真实的第500个
-        sss = 'time_step {}/ process {}/ action {}/ reward {}/ state {}/'.format(timer, process, action_index, rewardd, state_tp_real_state(state))
+        sss = 'time_step {}/ process {}/ action {}/ reward {}/ state {}/'.format(timer, process, action_index, rewardd, state)
         print(sss)
         requestANDstate = 'time_step {}/ process {}/ action {}/ reward {}/ state {}/'.format(timer, process, action_index, rewardd, state)
         f = open('/Users/ocean/git/ECOC-PTP/multi-agent/Results/information1', 'a')
@@ -390,22 +390,9 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
     timer += 1
     loss = []
     actor_states, states, actions, rewards, actor_new_states, states_ = memory.sample_buffer()
-    # print(len(actor_states[0]))
-    # print(len(actor_new_states))
-    actionxx = copy.deepcopy(actions)
-    action1 = []
-    for x in range(len(actions)):
-        action1.append([actions[x][2]])
-        actionxx[x].remove(actions[x][2])
-    # print(action1)
-    # print(actions)
-    action1 = T.tensor(action1, dtype=T.float)
-    actionxx = T.tensor(actionxx, dtype=T.float)
-    actionxx = actionxx.view(-1, 64)
-    action1 = action1.view(-1, 16)
-    actionss = T.cat((actionxx, action1), dim=1)
-    # print(actionss)
+    # print(len(actions))
 
+    actions = T.tensor(actions, dtype=T.float)
     states = T.tensor(states, dtype=T.float)
 
     rewards = T.tensor(rewards, dtype=T.float)
@@ -414,43 +401,24 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
     # print(action1)
     all_agents_new_actions = []  # [[batch * 20],[],,,]
     all_agents_new_mu_actions = []
-
+    print(actor_new_states)
     for agent_idx in range(len(maddpg_agents.agents)):
-        # print(len(maddpg_agents.agents))
         new_states = T.tensor(actor_new_states[agent_idx], dtype=T.float)
-        # print(new_states)
         new_pi = maddpg_agents.agents[agent_idx].target_actor.forward(new_states)
-        # print(len(new_pi))
         all_agents_new_actions.append(new_pi)
         mu_states = T.tensor(actor_states[agent_idx], dtype=T.float)
         pi = maddpg_agents.agents[agent_idx].actor.forward(mu_states)
         all_agents_new_mu_actions.append(pi)
-    # print(len(all_agents_new_actions[0]))
-    # print(state_)
-    # print('--------')
-    # print(state)
-    # # print(all_agents_new_actions)
-    # # print('------')
-    new_actions = T.cat([acts for acts in all_agents_new_actions], dim=1)
-    # new_actions = new_actions[0]
 
-    # print(new_actions)
-    # new_actions = new_actions[0]
-    mu = T.cat([acts for acts in all_agents_new_mu_actions], dim=1)
-    # print(mu)
-    # print('-----')
+    print(len(all_agents_new_actions))
+    # new_actions = T.cat([acts for acts in all_agents_new_actions], dim=1)
     # print(len(new_actions))
-    # print('-----')
-    # print(actionss)
+    mu = T.cat([acts for acts in all_agents_new_mu_actions], dim=1)
 
     xxx = 0
-    # print(maddpg_agents.agents[0].critic.fc1.weight.data)
     for agent_idx in range(len(maddpg_agents.agents)):
-        # print(states_)
-        # print('-------')
-        # print(states)
         critic_value_ = maddpg_agents.agents[agent_idx].target_critic.forward(states_, new_actions).flatten()
-        critic_value = maddpg_agents.agents[agent_idx].critic.forward(states, actionss).flatten()  # 这就是评论员打的分
+        critic_value = maddpg_agents.agents[agent_idx].critic.forward(states, actions).flatten()  # 这就是评论员打的分
         target = rewards[:, agent_idx] + maddpg_agents.agents[agent_idx].gamma * critic_value_
         critic_loss = F.mse_loss(target, critic_value)
         maddpg_agents.agents[agent_idx].critic.optimizer.zero_grad()
@@ -479,7 +447,7 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
         lo = loss[-1]
 
     if timer % 5 == 0:  # 4500的话是真实的第500个
-        sss = 'time_step {}/ process {}/ action {}/ reward {}/ learn {}/ epsilon {}/ state {}/'.format(timer, process, action_index, rewardd, learn, epsilon, state_tp_real_state(state))
+        sss = 'time_step {}/ process {}/ action {}/ reward {}/ learn {}/ epsilon {}/ state {}/'.format(timer, process, action_index, rewardd, learn, epsilon, state)
         print(sss)
         requestANDstate = 'time_step {}/ process {}/ action {}/ reward {}/ state {}/'.format(timer, process,action_index, rewardd, state)
         f = open('/Users/ocean/git/ECOC-PTP/multi-agent/Results/information1', 'a')

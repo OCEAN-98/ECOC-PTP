@@ -39,7 +39,6 @@ def action_to_realaction(action):
     x = [0, 1, 2, 3, 4, 5, 6, 7]
     y = ['P', 'Q']
     z = newproduct(x, y)
-    print(len(z))
     real_action = []
     for i in action:
         real_action.append(z[i])
@@ -69,7 +68,7 @@ def action_to_reward(action, slot, requests):
         slot1.append(i / 4)
 
 
-    if slot[str(real_ac[0][0])][0] == 1 and slot[str(action[1][0])][0] == 1: # 两个都选择了已经被占用的，所以都不行
+    if slot[str(real_ac[0][0])][0] == 1 and slot[str(real_ac[1][0])][0] == 1: # 两个都选择了已经被占用的，所以都不行
         reward = -2
         # slot上的时间还是要都减少一的
         for i in [k for k in slot.keys()]:
@@ -150,7 +149,7 @@ def action_to_reward(action, slot, requests):
                 some = 1
             slot2.append(some)
 
-    elif action[0] == action[1] and slot[str(action[0])][0] == 0: # 此时原本两个都可以，但是动作一致，最后随机一个行的
+    elif action[0] == action[1] and slot[str(real_ac[1][0])][0] == 0: # 此时原本两个都可以，但是动作一致，最后随机一个行的
         reward = -1
         # 先看slot怎么变，在才能记录这个slot的占用情况
         a = random.choice([0, 1])
@@ -236,7 +235,7 @@ def action_to_reward(action, slot, requests):
     return [slot1, action, reward, slot2, new_requests]
 
 
-[slot1, action, reward, slot2, new_requests] = action_to_reward(action, slot, requests)
-print(reward)
-print(slot2)
-print(len(slot2))
+# [slot1, action, reward, slot2, new_requests] = action_to_reward(action, slot, requests)
+# print(reward)
+# print(slot2)
+# print(len(slot2))
