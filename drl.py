@@ -51,55 +51,18 @@ class MultiAgentReplayBuffer:  # 每个actor有partial state； 而中央控制�
         self.mem_cntr += 1
 
     def sample_buffer(self):
-        x = random.sample([i for i in range(len(self.state_memory))], self.batch_size)
-        states = []
-        states_ = []
-        rewards = []
-        actions = []
+        x = random.randrange(0, self.mem_size - self.batch_size)
+
+        states = self.state_memory[x: x + self.batch_size]
+        states_ = self.new_state_memory[x: x + self.batch_size]
+        rewards = self.reward_memory[x: x + self.batch_size]
+        actions = self.action_memory[x: x + self.batch_size]
         actor_states = [[], [], []]
         actor_new_states = [[], [], []]
-        for i in range(len(x)):
-            states.append(self.state_memory[i])
-            states_.append(self.new_state_memory[i])
-            rewards.append(self.reward_memory[i])
-            actions.append(self.action_memory[i])
-
-        # for agent_index in range(self.n_agents):
-        for i in x:
-            actor_states[0].append(self.actor_state_memory[0][i])  # 从第i个agent的50000个选300个
-            actor_new_states[0].append(self.actor_new_state_memory[0][i])
-            actor_states[1].append(self.actor_state_memory[1][i])  # 从第i个agent的50000个选300个
-            actor_new_states[1].append(self.actor_new_state_memory[1][i])
-            actor_states[2].append(self.actor_state_memory[2][i])  # 从第i个agent的50000个选300个
-            actor_new_states[2].append(self.actor_new_state_memory[2][i])
-            # for agent_index in range(self.n_agents):
-            #     actor_states.append(self.actor_state_memory[agent_index][i])
-            #     actor_new_states.append(self.actor_new_state_memory[agent_index][i])
-        # print(len(x))
-        # print(actor_new_states[0][0])
-        # print('-----------------')
-
-
-
-        # states = random.sample(self.state_memory, self.batch_size)
-        # states_ = random.sample(self.new_state_memory, self.batch_size)
-        # rewards = random.sample(self.reward_memory, self.batch_size)
-        # actions = random.sample(self.action_memory, self.batch_size
-        #
-        # actor_states = []
-        # actor_new_states = []
-        # # actions = []
-        # for agent_index in range(self.n_agents):
-        #     for i in range(self.batch_size):
-        #         x = random.randrange(0, self.mem_size - self.batch_size)
-        #         actor_states.append(self.actor_state_memory[agent_index][x])  # 从第i个agent的50000个选300个
-        #         actor_new_states.append(self.actor_new_state_memory[agent_index][x])
-
-        # 连续选的区别
-        # for agent_index in range(self.n_agents):
-        #     actor_states.append(self.actor_state_memory[agent_index][x: x + self.batch_size]) # 从第i个agent的50000个选300个
-        #     actor_new_states.append(self.actor_new_state_memory[agent_index][x: x + self.batch_size])
-        #     # actions.append(self.actor_action_memory[agent_index][x: x + self.batch_size])
+        for agent_index in range(self.n_agents):
+            actor_states.append(self.actor_state_memory[agent_index][x: x + self.batch_size]) # 从第i个agent的50000个选300个
+            actor_new_states.append(self.actor_new_state_memory[agent_index][x: x + self.batch_size])
+            # actions.append(self.actor_action_memory[agent_index][x: x + self.batch_size])
 
         return actor_states, states, actions, rewards, actor_new_states, states_
 
@@ -115,15 +78,15 @@ class CriticNetwork(nn.Module):
 
         self.chkpt_file = os.path.join(chkpt_dir, name)
 
-        self.fc1 = nn.Linear(150, fc1_dims)
+        self.fc1 = nn.Linear(26 + 16, fc1_dims)
         self.fc2 = nn.Linear(fc1_dims, fc2_dims)
         self.q = nn.Linear(fc2_dims, 1)
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta)
 
     def forward(self, state, action):
-        state = state.view(-1, 70)
-        action = action.view(-1, 80)  # action是onehot？ 对，softmax输出对pi
+        state = state.view(-1, 26)
+        action = action.view(-1, 16)  # action是onehot？ 对，softmax输出对pi
         x = F.relu(self.fc1(T.cat((state, action), dim=1)))
         x = F.relu(self.fc2(x))
         q = self.q(x)
@@ -160,7 +123,7 @@ class ActorNetwork(nn.Module):
         self.optimizerr = optim.Adam(self.parameters(), lr=alpha)
 
     def forward(self, state):
-        state = state.view(-1, 70)
+        state = state.view(-1, 26)
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
         pi = T.relu(self.pi(x))  # 视频50分50秒对此有解释
@@ -187,7 +150,7 @@ class ActorNetwork(nn.Module):
 
 class Agent:  # 代表了每一个agent
     def __init__(self, actor_dims, critic_dims, n_actions, agent_idx, chkpt_dir, n_agents,
-                 alpha=0.01, beta=0.01, fc1 = 128, fc2 = 64, gamma=0.6, tau=0.01):
+                 alpha=0.01, beta=0.01, fc1 = 64, fc2 = 64, gamma=0.8, tau=0.01):
         self.gamma = gamma
         self.tau = tau
         self.n_actions = n_actions
@@ -306,32 +269,34 @@ def random_pick(some_list, probabilities):
     return item
 
 # 之所以observe比随机好，是因为，只要有一点规律，就会还可以，不拉胯。
-fc1 = 144
-fc2 = 144
+fc1 = 64
+fc2 = 64
 alpha = 1e-4
 beta = 1e-4
 chkpt_dir = '/Users/ocean/git/ECOC-PTP/multi-agent'
-n_agents = 3
-actor_dims = [70, 70, 70]
-critic_dims = 5 * 14   # 请求信息 14 * 4 + 资源信息 15
-n_actions = [32, 32, 16]
+n_agents = 2
+actor_dims = [26, 26]
+critic_dims =  26  # 请求信息 8 * 3 + request 2
+n_actions = [16, 16]
 INITIAL_EPSILON = 0.6
 FINAL_EPSILON = 0.001
 epsilon = copy.deepcopy(INITIAL_EPSILON)
 
 # 这个maddpg_agents是关键
 maddpg_agents = MADDPG(actor_dims, critic_dims, n_agents, n_actions, chkpt_dir)
-memory = MultiAgentReplayBuffer(100, critic_dims, actor_dims, n_actions, n_agents, batch_size=5)
+memory = MultiAgentReplayBuffer(10, critic_dims, actor_dims, n_actions, n_agents, batch_size=5)
 
 # evaluate = False  # 用于训练完了之后看看模型效果的, 或者继续训练
 timer = 0
-Observe = 10000
-Explore = 500
+Observe = 20
+Explore = 50
 Train = 300
 # if evaluate:
 #     maddpg_agents.load_checkpoint()
-
-[s, three_actions, r, next_s] = from_xx_to_reward([7, 7, 15]) # 第一个动作随便选择的
+requests = [random.randrange(1, 5, 1), random.randrange(1, 5, 1)] # 初始化第一步
+slot = {'0': [0, 0, 'M'], '1': [0, 0, 'M'], '2': [0, 0, 'M'], '3': [0, 0, 'M'], '4': [0, 0, 'M'], '5': [0, 0, 'M'], '6': [0, 0, 'M'], '7': [0, 0, 'M']} # 这个也得是drl先给一个初始值
+# 初始化第一步
+[s, two_actions, r, next_s, requests_next] = action_to_reward([15, 7], slot, requests) # 第一个动作随便选择的
 state = s # 预先激活的点，请求的内容
 obs = [s, s, s]  # 每个的状态；state是最后输入评论员的
 rewarddd = []  # 用户rewrd的画图
@@ -341,7 +306,7 @@ while timer < Observe:
     action_index = []
     reward = []
     statex = None
-    for i in range(3):
+    for i in range(2):
         action = list(np.zeros(n_actions[i]))
         rangdom_pick_action = random.randrange(0, n_actions[i], 1)
         action[rangdom_pick_action] = 1
@@ -349,12 +314,12 @@ while timer < Observe:
         action_idx = action.index(max(action))
         action_index.append(action_idx)
 
-    [s, three_actions, r, next_s] = from_xx_to_reward(action_index)
-    obs = [s,s,s]
+    [s, three_actions, r, next_s, requests_next] = action_to_reward(action_index, slot, requests_next)
+    obs = [s,s]
     state = s
     # print(state)
     state_ = next_s
-    obs_ = [next_s, next_s, next_s]
+    obs_ = [next_s, next_s]
     rewardd = r
     memory.store_tansition(obs, state, actions, rewardd, obs_, state_)  # 存的过程，这段时间只会往里存
 
@@ -397,7 +362,7 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
     rdn = random.random()
     learn = 1
     if rdn <= epsilon:
-        for i in range(3):
+        for i in range(2):
             action_ = list(np.zeros(n_actions[i]))
             rangdom_pick_action = random.randrange(0, n_actions[i], 1)
             action_[rangdom_pick_action] = 1
@@ -406,7 +371,7 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
     else:
         acts = maddpg_agents.choose_action(obs)  # 所有actor的动作
         acts = list(acts)
-        for i in range(3):
+        for i in range(2):
             ac = acts[i]
             ac = list(np.array(ac))
             ac_index = np.argmax(ac)
@@ -414,12 +379,12 @@ while timer >=  Observe and timer < (Observe + Explore + Train):
             action_[ac_index] = 1
             actions_2.append(action_)
             action_index.append(ac_index)
-    [s, three_actions, r, next_s] = from_xx_to_reward(action_index)
-    obs = [s, s, s]
+    [s, three_actions, r, next_s, requests_next] = action_to_reward(action_index, slot, requests_next)
+    obs = [s, s]
     state = s
 
     state_ = next_s
-    obs_ = [next_s, next_s, next_s]
+    obs_ = [next_s, next_s]
     rewardd = r
     memory.store_tansition(obs, state, actions_2, rewardd, obs_, state_)  # 存的过程，这段时间只会往里存
     timer += 1

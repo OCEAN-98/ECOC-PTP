@@ -1,6 +1,22 @@
 import copy
 import random
 from itertools import product
+import pandas as pd
+import numpy as np
+import csv
+
+def pick_from_reward_recording(filelink, check):
+    reward = 0
+    with open(filelink, 'r') as csvfile:
+        reader = csv.reader(csvfile)
+        rows = [row for row in reader]
+    str_check = []
+    for i in check:
+        str_check.append(str(i))
+    for i in rows:
+        if str_check == i[:-1]:
+            reward = int(i[-1])
+    return reward
 
 def newproduct(x, b):
     c = list(product(x, b))
@@ -23,6 +39,7 @@ def action_to_realaction(action):
     x = [0, 1, 2, 3, 4, 5, 6, 7]
     y = ['P', 'Q']
     z = newproduct(x, y)
+    print(len(z))
     real_action = []
     for i in action:
         real_action.append(z[i])
@@ -49,7 +66,7 @@ def action_to_reward(action, slot, requests):
             some = 1
         slot1.append(some)
     for i in requests:
-        slot2.append(i / 4)
+        slot1.append(i / 4)
 
 
     if slot[str(real_ac[0][0])][0] == 1 and slot[str(action[1][0])][0] == 1: # 两个都选择了已经被占用的，所以都不行
@@ -176,10 +193,19 @@ def action_to_reward(action, slot, requests):
         b = [x for x in slot.values()]
         check_the_reward_slot = []
         for i in b:
-            check_the_reward_slot.append(i[0])
-        reward = pick_from_reward_recording(check_the_reward_slot)
-        # 这里是要写一个函数，把这个读出来
+            if i[0] == 0:
+                check_the_reward_slot.append(0)
+            elif i[0] != 0:
+                if i[2] == 'P':
+                    check_the_reward_slot.append(1)
+                elif i[2] == 'Q':
+                    check_the_reward_slot.append(2)
 
+        # for i in b:
+        #     check_the_reward_slot.append(i[0])
+        # print(check_the_reward_slot)
+        reward = pick_from_reward_recording('/Users/ocean/Library/Mobile Documents/com~apple~CloudDocs/Documents/ECOCPTP/channel1.csv', check_the_reward_slot)
+        # 这里是要写一个函数，把这个读出来
         for i in [k for k in slot.keys()]:  # 先把所有的时间都减少一个
             if slot[i][1] > 0:
                 slot[i][1] -= 1
@@ -209,3 +235,8 @@ def action_to_reward(action, slot, requests):
 
     return [slot1, action, reward, slot2, new_requests]
 
+
+[slot1, action, reward, slot2, new_requests] = action_to_reward(action, slot, requests)
+print(reward)
+print(slot2)
+print(len(slot2))
