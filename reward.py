@@ -18,6 +18,7 @@ def newproduct(x, b):
 slot = {'0': [0, 0, 'M'], '1': [0, 0, 'M'], '2': [0, 0, 'M'], '3': [0, 0, 'M'], '4': [0, 0, 'M'], '5': [0, 0, 'M'], '6': [0, 0, 'M'], '7': [0, 0, 'M']} # 这个也得是drl先给一个初始值
 timer = 0 # 这个是drl给的
 action = [15, 7] # 这个也是drl给的
+requests = [random.randrange(1, 5, 1), random.randrange(1, 5, 1)]  # [A for how long, B for how long] 这个环境自己产生的,是有真实流量决定，而不是ml来决定
 def action_to_realaction(action):
     x = [0, 1, 2, 3, 4, 5, 6, 7]
     y = ['P', 'Q']
@@ -27,8 +28,7 @@ def action_to_realaction(action):
         real_action.append(z[i])
     return real_action
 
-def action_to_reward(action, slot):
-    requests = [random.randrange(1, 5, 1), random.randrange(1, 5, 1)]  # [A for how long, B for how long] 这个环境自己产生的,是有真实流量决定，而不是ml来决定
+def action_to_reward(action, slot, requests):
     real_ac = action_to_realaction(action) # [ [which slot, which modulation], [which slot, which modulation] ]
     reward = 0
     a = [x for x in slot.values()]
@@ -48,6 +48,9 @@ def action_to_reward(action, slot):
         elif i[2] == 'Q':
             some = 1
         slot1.append(some)
+    for i in requests:
+        slot2.append(i / 4)
+
 
     if slot[str(real_ac[0][0])][0] == 1 and slot[str(action[1][0])][0] == 1: # 两个都选择了已经被占用的，所以都不行
         reward = -2
@@ -198,10 +201,11 @@ def action_to_reward(action, slot):
                 some = 1
             slot2.append(some)
 
-    return [requests, reward, slot1, slot2]
+    new_requests = [random.randrange(1, 5, 1), random.randrange(1, 5, 1)]
 
-#
-#
-#
-#
-#
+    for i in new_requests:
+        slot2.append(i / 4)
+
+
+    return [slot1, action, reward, slot2, new_requests]
+
