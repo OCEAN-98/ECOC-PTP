@@ -6,19 +6,42 @@ import random
 import pandas as pd
 import os
 from sklearn.utils import shuffle
+from itertools import product
+
+print('' + '1')
+def check(list1, list2):
+    word1 = ''
+    word2 = ''
+    for i in list1:
+        word1 = word1 + str(i)
+    for i in list2:
+        word2 = word2 + str(i)
+    if word1 in word2 or word2 in word1:
+        return True
+    else:
+        return False
+
+# def newproduct(x, b):
+#     c = list(product(x, b))
+#     e = []
+#     for i in c:
+#         d = list(i)
+#         e.append(d)
+#     return e
+# e = newproduct([1, 2, 3], [1, 2])
 
 # data = pd.read_csv('/Users/ocean/Desktop/data.csv')
 # data = shuffle(data)
 # data.to_csv('/Users/ocean/Desktop/data_shuffle.csv')
 
-data = pd.read_csv('/Users/ocean/Desktop/data_shuffle.csv')
+data = pd.read_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_shuffle.csv')
 from csv import reader
 
-with open('/Users/ocean/Desktop/data_shuffle.csv', 'r') as csv_file:
+with open('/Users/Ocean/Documents/Git/ECOC-PTP/data_shuffle.csv', 'r') as csv_file:
     csv_reader = reader(csv_file)
     # Passing the cav_reader object to list() to get a list of lists
     list_of_rows = list(csv_reader)
-
+# print(list_of_rows)
 shuffle_exe = []
 for i in range(len(list_of_rows)):
     shuffle_exe.append([])
@@ -83,7 +106,7 @@ optimizer = torch.optim.Adam(net.parameters(), lr=1e-6)
 D = []
 # shuffle_exe = [] # 10000行数据
 
-s_t = shuffle_exe[0][:16]
+s_t = shuffle_exe[0][:32]
 
 
 epsilon = INITIAL_EPSILON
@@ -97,6 +120,7 @@ time_slot_r = []
 
 while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一个很长的list，注意有两个卷积网，需要分几个S出来
     s = torch.FloatTensor(s_t).view(-1, 16)
+    # print(s)
     readout = net(s)
     # readout = readout.cpu() # readout是一个二维向量，分别是Q值和对应的action选择
     readout_t = readout.data.numpy()
@@ -110,9 +134,16 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
 
     r_t = 0
     x = copy.deepcopy(s_t)
+    # print(x)
+    # print('kkl')
     for i in shuffle_exe:
-        if x.append(action_index) in i:
+        # print(i)
+        # print(x)
+        # print(x + [action_index + 1])
+        # print(i)
+        if check(x + [action_index + 1] , i):
             r_t = i[-1]
+            break
         else:
             r_t = 10
 
@@ -192,7 +223,7 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
             timer, state, epsilon, action_index, r_t, np.max(readout_t)
         )
         print(sss)
-        f = open('/Users/ocean/git/ECOC-PTP/log_file02.txt', 'a')
+        f = open('/Users/Ocean/Documents/Git/ECOC-PTP/log_file02.txt', 'a')
         f.write(sss + '\n')
         f.close()
 
@@ -207,9 +238,9 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
                        'time_r': time_slot_r}
 
         data_loss = pd.DataFrame(data_loss)
-        data_loss.to_csv('/Users/ocean/git/ECOC-PTP/data_loss', index=False)
+        data_loss.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_loss', index=False)
         data_reward = pd.DataFrame(data_reward)
-        data_reward.to_csv('/Users/ocean/git/ECOC-PTP/data_reward')
+        data_reward.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_reward')
 
 
 
