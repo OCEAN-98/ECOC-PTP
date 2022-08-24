@@ -203,9 +203,9 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
         # print(i)
         if check(x , i):
             r_t = i[16 + action_index]
-        #     break
-        # else:
-        #     r_t = 10
+            # print(action_index)
+            # print(i)
+            # print(r_t)
 
     if epsilon > FINAL_EPSILON and timer > OBSERVE:
         epsilon -= (INITIAL_EPSILON - FINAL_EPSILON) / EXPLORE
