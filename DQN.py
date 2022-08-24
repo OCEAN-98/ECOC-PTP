@@ -8,7 +8,7 @@ import os
 from sklearn.utils import shuffle
 from itertools import product
 
-print('' + '1')
+# print('' + '1')
 def check(list1, list2):
     word1 = ''
     word2 = ''
@@ -37,18 +37,78 @@ def check(list1, list2):
 data = pd.read_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_shuffle.csv')
 from csv import reader
 
-with open('/Users/Ocean/Documents/Git/ECOC-PTP/data_shuffle.csv', 'r') as csv_file:
+with open('/Users/Ocean/Documents/Git/ECOC-PTP/data_0822_total_1.csv', 'r') as csv_file:
     csv_reader = reader(csv_file)
     # Passing the cav_reader object to list() to get a list of lists
     list_of_rows = list(csv_reader)
 # print(list_of_rows)
 shuffle_exe = []
+newlist = []
 for i in range(len(list_of_rows)):
     shuffle_exe.append([])
     for ii in list_of_rows[i]:
-        x = int(ii)
+        x = float(ii)
         shuffle_exe[i].append(x)
+#
+# print(shuffle_exe)
+rew = []
+i = 0
+while i < len(shuffle_exe) :
+    # print(shuffle_exe[i])
+# for i in shuffle_exe:
+    x = shuffle_exe[i][-3:]
+    # print(i)
 
+    if x[0] > 0.0030 and x[1] > 0.0030 and x[2] > 0.0030:
+        a = min(x)
+        b = max(x)
+        for ii in x:
+            if ii == a:
+                rew.append(1)
+            elif ii == b:
+                rew.append(0)
+            else:
+                rew.append(0.5)
+
+    elif x[0] <= 0.0030 or x[1] <= 0.0030 or x[2] <= 0.0030:
+        q = []
+        for iiii in x:
+            if iiii < 0.003:
+                q.append(abs(0.003-iiii))
+        a = min(q)
+        b = max(q)
+        z = []
+        for iii in x:
+            z.append(abs(0.003-iii))
+
+        for ii in range(len(x)):
+            if x[ii] >= 0.003:
+                rew.append(-1)
+            elif x[ii] < 0.003:
+                if z[ii] == a:
+                    rew.append(1)
+                elif z[ii] == b:
+                    rew.append(0)
+                else:
+                    rew.append(0.5)
+        # print(x)
+        # print(rew)
+
+    aa = shuffle_exe[i][:-3]
+#     print(aa)
+    for iiiii in rew:
+        aa.append(iiiii)
+    newlist.append(aa)
+    rew = []
+    i += 1
+# print(shuffle_exe[-3:])
+# print(newlist[-3:])
+# print(len(shuffle_exe))
+# print(len(newlist))
+
+
+
+#
 def matrix_to_vector(matrix):
     list = []
     for i in matrix:
@@ -104,10 +164,9 @@ optimizer = torch.optim.Adam(net.parameters(), lr=1e-6)
 
 # Offload = stepgo(301, 6)
 D = []
-# shuffle_exe = [] # 10000行数据
+# newlist = [] # 10000行数据
 
-s_t = shuffle_exe[0][:32]
-
+s_t = newlist[0][:16]
 
 epsilon = INITIAL_EPSILON
 timer = 1
@@ -126,6 +185,7 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
     readout_t = readout.data.numpy()
 
     a_t = list(np.zeros(3))
+    action_index = 0
     if random.random() <= epsilon:
         action_index = random.randrange(ACTIONS) # 随机选择行动
     else:
@@ -136,21 +196,21 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
     x = copy.deepcopy(s_t)
     # print(x)
     # print('kkl')
-    for i in shuffle_exe:
+    for i in newlist:
         # print(i)
         # print(x)
         # print(x + [action_index + 1])
         # print(i)
-        if check(x + [action_index + 1] , i):
-            r_t = i[-1]
-            break
-        else:
-            r_t = 10
+        if check(x , i):
+            r_t = i[16 + action_index]
+        #     break
+        # else:
+        #     r_t = 10
 
     if epsilon > FINAL_EPSILON and timer > OBSERVE:
         epsilon -= (INITIAL_EPSILON - FINAL_EPSILON) / EXPLORE
 
-    s_t1 = shuffle_exe[timer][:16]
+    s_t1 = newlist[timer][:16]
 
     D.append([s_t, a_t, r_t, s_t1])
     if len(D) > REPLAY_MOMERY:
@@ -203,7 +263,7 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
     # else:
     #     Vect = 0
 
-    s_t = shuffle_exe[timer][:16]
+    s_t = newlist[timer][:16]
 
     gotta = {'net': net.state_dict(), 'optimizer':optimizer.state_dict()}
 
