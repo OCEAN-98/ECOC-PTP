@@ -34,10 +34,10 @@ def check(list1, list2):
 # data = shuffle(data)
 # data.to_csv('/Users/ocean/Desktop/data_shuffle.csv')
 
-data = pd.read_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_shuffle.csv')
+# data = pd.read_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_shuffle.csv')
 from csv import reader
 
-with open('/Users/Ocean/Documents/Git/ECOC-PTP/data_0822_total_1.csv', 'r') as csv_file:
+with open('/Users/Ocean/Documents/Git/ECOC-PTP/data_shuffle_1.csv', 'r') as csv_file:
     csv_reader = reader(csv_file)
     # Passing the cav_reader object to list() to get a list of lists
     list_of_rows = list(csv_reader)
@@ -150,17 +150,17 @@ ACTIONS = 3 # action个数， 贪婪算法
 GAMMA = 0.99 # 衰减率
 INITIAL_EPSILON = 0.6
 FINAL_EPSILON = 0.001
-REPLAY_MOMERY = 20 #1000
-BATCH = 10 #50
-OBSERVE = 30 #1000
-EXPLORE = 40 #6000
-TRAIN = 50 #3000
+REPLAY_MOMERY = 100 #1000
+BATCH = 80 #50
+OBSERVE = 800 #1000
+EXPLORE = 1500 #6000
+TRAIN = 700 #3000
 
 net = Net() # 神经网络
 net.init()
 # net.cuda()
 criterion = nn.MSELoss() #.cuda()
-optimizer = torch.optim.Adam(net.parameters(), lr=1e-6)
+optimizer = torch.optim.Adam(net.parameters(), lr=1e-4)
 
 # Offload = stepgo(301, 6)
 D = []
@@ -203,6 +203,8 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
         # print(i)
         if check(x , i):
             r_t = i[16 + action_index]
+            # print(r_t)
+        # break
             # print(action_index)
             # print(i)
             # print(r_t)
@@ -278,7 +280,7 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
     else:
         state = 'train'  # 贪婪策略已经结束
 
-    if timer % 10 == 0:
+    if timer % 1 == 0:
         sss = 'time_step {}/ state {}/ Epsilon {:.2f}/ action {}/ reward {}/ Q_MAX {:e}/'.format(
             timer, state, epsilon, action_index, r_t, np.max(readout_t)
         )
@@ -287,11 +289,11 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
         f.write(sss + '\n')
         f.close()
 
-    if timer % 5 == 0:
+    if timer % 1 == 0:
         time_slot_r.append(timer)
         reward.append(r_t)
 
-    if timer % 10 == 0:
+    if timer % 1 == 0:
         data_loss = {'loss': loss_value,
                      'time_l': time_slot_l}
         data_reward = {'reward': reward,
