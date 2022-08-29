@@ -5,6 +5,7 @@ import numpy as np
 
 # plot the figure
 check_data_reward = pd.read_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_reward')
+
 r = check_data_reward['reward']
 newlist = []
 for i in r:
