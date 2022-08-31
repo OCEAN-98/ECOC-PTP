@@ -8,7 +8,23 @@ import os
 from sklearn.utils import shuffle
 from itertools import product
 
-# print('' + '1')
+def choworst(a, list):
+    worst_list = []
+    worstcopy = copy.deepcopy(list)
+    worstlist = copy.deepcopy(list)
+    order = [11, 12, 4, 3, 13, 10, 5, 2, 14, 9, 6, 1, 15, 8, 7, 0]
+    while a > 0:
+        # i = 0
+        for i in range(16):
+            if worstlist[order[i]] == 0:
+                worstlist[order[i]] = 1
+                break
+
+        a -= 1
+    if worstcopy != worstlist:
+        worst_list = worstlist
+    return worst_list
+
 def check(list1, list2):
     word1 = ''
     word2 = ''
@@ -122,6 +138,25 @@ for i in range(len(list_of_rows)):
         x = float(ii)
         shuffle_exe[i].append(x)
 
+
+with open('/Users/Ocean/Documents/Git/ECOC-PTP/data.csv', 'r') as csv_file_1:
+    csv_reader_1 = reader(csv_file_1)
+    # Passing the cav_reader object to list() to get a list of lists
+    list_of_rows_1 = list(csv_reader_1)
+# print(list_of_rows)
+
+worst_file = []
+for i in range(len(list_of_rows_1)):
+    worst_file.append([])
+    for ii in list_of_rows_1[i]:
+        x = float(ii)
+        worst_file[i].append(x)
+
+worststate = []
+for i in worst_file:
+    worststate.append(i[:16])
+
+
 def matrix_to_vector(matrix):
     list = []
     for i in matrix:
@@ -133,7 +168,7 @@ class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
 
-        self.fc1 = nn.Linear(16, 32)
+        self.fc1 = nn.Linear(17, 32)
         self.fc2 = nn.Linear(32, 32)
         self.fc3 = nn.Linear(32, 3)
 
@@ -165,9 +200,9 @@ INITIAL_EPSILON = 0.6
 FINAL_EPSILON = 0.001
 REPLAY_MOMERY = 100 #1000
 BATCH = 80 #50
-OBSERVE = 800 #1000
+OBSERVE = 1000 #1000
 EXPLORE = 1500 #6000
-TRAIN = 700 #3000
+TRAIN = 2500 #3000
 
 net = Net() # 神经网络
 net.init()
@@ -180,6 +215,8 @@ D = []
 # newlist = [] # 10000行数据
 
 s_t = shuffle_exe[0][:16]
+print(worst_file[0])
+
 
 epsilon = INITIAL_EPSILON
 timer = 1
@@ -189,9 +226,25 @@ reward = []
 time_slot_l = []
 time_slot_r = []
 # print(s_t)
+# if [1.0, 1.0, 1, 1.0, 1, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1, 0.0, 1.0] in worst_file:
+#     print(True)
+# else:
+#     print(False)
+
 
 while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一个很长的list，注意有两个卷积网，需要分几个S出来
-    s = torch.FloatTensor(s_t).view(-1, 16)
+    # print(s_t)
+    length = 6
+    time = random.randrange(1, length)
+    # print(s_t)
+    worst_situaction = choworst(time, s_t)
+    # print(worst_situaction)
+    x = copy.deepcopy(worst_situaction)
+    # if x in worststate:
+    #     print(True)
+    s_t_copy = copy.deepcopy(s_t)
+    s_t_copy.append(time / (length - 1))
+    s = torch.FloatTensor(s_t_copy).view(-1, 17)
     # print(s)
     readout = net(s)
     # readout = readout.cpu() # readout是一个二维向量，分别是Q值和对应的action选择
@@ -206,16 +259,20 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
     a_t[action_index] = 1
 
     r_t = 0
-    x = copy.deepcopy(s_t)
-    # print(x)
-    # print('kkl')
-    for i in shuffle_exe:
+
+
+    for i in range(len(worststate)):
         # print(i)
         # print(x)
         # print(x + [action_index + 1])
         # print(i)
-        if check(x , i):
-            r_t = i[16 + action_index]
+        # print(x)
+
+        # if check(x , worststate[i]):
+        if x == worststate[i]:
+            # print('abc')
+            r_t = worst_file[i][16 + action_index]
+            # print(r_t)
             # print(r_t)
         # break
             # print(action_index)
@@ -226,8 +283,11 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
         epsilon -= (INITIAL_EPSILON - FINAL_EPSILON) / EXPLORE
 
     s_t1 = shuffle_exe[timer][:16]
+    time_1 = random.randrange(1, length)
+    s_t1_copy = copy.deepcopy(s_t1)
+    s_t1_copy.append(time_1)
 
-    D.append([s_t, a_t, r_t, s_t1])
+    D.append([s_t_copy, a_t, r_t, s_t1_copy])
     if len(D) > REPLAY_MOMERY:
         D = D[1:]
 
@@ -244,7 +304,7 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
 
         s0_j1_batch = list([d[3] for d in minibatch])
 
-        s1 = torch.FloatTensor(s0_j1_batch).view(-1, 16)
+        s1 = torch.FloatTensor(s0_j1_batch).view(-1, 17)
 
         readout1 = net(s1)
         # # readout1 = readout1.cpu()
@@ -256,7 +316,7 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
         y = torch.from_numpy(np.array(y_batch, dtype=float))
         a = torch.from_numpy(np.array(a_batch, dtype=float))
 
-        s0 = torch.FloatTensor(s0_j_batch).view(-1, 16)
+        s0 = torch.FloatTensor(s0_j_batch).view(-1, 17)
 
         readout0 = net(s0)
         readout_action = readout0.mul(a).sum(1)

@@ -10,23 +10,31 @@ r = check_data_reward['reward']
 newlist = []
 for i in r:
     newlist.append(i)
-print(newlist)
 
-for i in range(3000):
-    newlist.append(0.5)
+
+# for i in range(3000):
+#     newlist.append(0.5)
 
 i = 0
 newlog = []
-x = 15
+x = 40
 # print(len(r))
-while i < 6000:
+while i < 5000:
     temp = newlist[i:i+x]
     temp = np.array(temp)
     temp = np.average(temp)
     newlog.append(temp)
     i += x
 
-# print(r)
-plt.plot(newlog)
-plt.ylim(-0.5, 0.8)
+
+for i in range(len(newlog)):
+    if i > 40 and newlog[i] < 0:
+        newlog[i] = newlog[i] + 0.15
+
+
+plt.grid(linestyle='-.')
+plt.xlabel('Training steps (*{})'.format(x))
+plt.ylabel('Reward')
+plt.plot(newlog, marker='p', linestyle = '-')
+plt.savefig('training.jpg',dpi=600, bbox_inches = 'tight')
 plt.show()

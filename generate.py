@@ -77,8 +77,10 @@ def generate(file, threshold):
         rew = []
         i += 1
     return newlist
+
 a = generate('/Users/Ocean/Documents/Git/ECOC-PTP/data_0822_total.csv', 0.003)
 b = generate('/Users/Ocean/Documents/Git/ECOC-PTP/data_0827_total.csv', 0.0045)
+c = generate('/Users/Ocean/Documents/Git/ECOC-PTP/data_0828_total.csv', 0.0047)
 
 import csv
 
@@ -94,11 +96,14 @@ def tocsv(list, file):
 
 # tocsv(a, '/Users/Ocean/Documents/Git/ECOC-PTP/data_total.csv')
 # tocsv(b, '/Users/Ocean/Documents/Git/ECOC-PTP/data_total.csv')
+# tocsv(c, '/Users/Ocean/Documents/Git/ECOC-PTP/data_total.csv')
 # tocsv(a, '/Users/Ocean/Documents/Git/ECOC-PTP/data_total.csv')
 # tocsv(b, '/Users/Ocean/Documents/Git/ECOC-PTP/data_total.csv')
+# tocsv(c, '/Users/Ocean/Documents/Git/ECOC-PTP/data_total.csv')
 # tocsv(a, '/Users/Ocean/Documents/Git/ECOC-PTP/data_total.csv')
 # tocsv(b, '/Users/Ocean/Documents/Git/ECOC-PTP/data_total.csv')
-
+# tocsv(c, '/Users/Ocean/Documents/Git/ECOC-PTP/data_total.csv')
+#
 # data = pd.read_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_total.csv')
 # data = shuffle(data)
 # data.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_shuffle.csv')
@@ -136,7 +141,6 @@ def choworst(a, list):
         worst_list = worstlist
     return worst_list
 
-
 withoutreward = []
 for i in range(len(shuffle_exe)):
     withoutreward.append([])
@@ -152,4 +156,4 @@ for i in range(6):
         if worst not in list:
             list.append(worst)
 
-# tocsv(list, '/Users/Ocean/Documents/Git/ECOC-PTP/data.csv')
+tocsv(list, '/Users/Ocean/Documents/Git/ECOC-PTP/data.csv')
