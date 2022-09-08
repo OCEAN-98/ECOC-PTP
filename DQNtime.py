@@ -7,6 +7,7 @@ import pandas as pd
 import os
 from sklearn.utils import shuffle
 from itertools import product
+import csv
 
 # print('' + '1')
 def check(list1, list2):
@@ -115,6 +116,14 @@ with open('/Users/Ocean/Documents/Git/ECOC-PTP/data_shuffle.csv', 'r') as csv_fi
     list_of_rows = list(csv_reader)
 # print(list_of_rows)
 
+def tocsv(list, file):
+    for i in range(len(list)):
+        f = open(file, 'a', newline='')
+        writer = csv.writer(f)
+        writer.writerow(list[i])
+        f.close()
+
+
 shuffle_exe = []
 for i in range(len(list_of_rows)):
     shuffle_exe.append([])
@@ -164,16 +173,16 @@ GAMMA = 0.99 # 衰减率
 INITIAL_EPSILON = 0.6
 FINAL_EPSILON = 0.001
 REPLAY_MOMERY = 100 #1000
-BATCH = 80 #50
-OBSERVE = 800 #1000
-EXPLORE = 1500 #6000
-TRAIN = 700 #3000
+BATCH = 60 #50
+OBSERVE = 1000 #1000
+EXPLORE = 2000 #6000
+TRAIN = 2000 #3000
 
 net = Net() # 神经网络
 net.init()
 # net.cuda()
 criterion = nn.MSELoss() #.cuda()
-optimizer = torch.optim.Adam(net.parameters(), lr=1e-4)
+optimizer = torch.optim.Adam(net.parameters(), lr=1e-5)
 
 # Offload = stepgo(301, 6)
 D = []
@@ -282,8 +291,8 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
 
     gotta = {'net': net.state_dict(), 'optimizer':optimizer.state_dict()}
 
-    # if timer % 10000 == 0:  # == (OBSERVE + EXPLORE + TRAIN):
-    #     torch.save(gotta, '/Users/Ocean/Library/Mobile Documents/com~apple~CloudDocs/Documents/TaskOffloading/Code/DQL/Results/parameters02')
+    if timer % 1 == 0:
+        torch.save(gotta, '/Users/Ocean/Documents/Git/ECOC-PTP/parameters_instant')
 
 
     if timer <= OBSERVE:
@@ -293,12 +302,19 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
     else:
         state = 'train'  # 贪婪策略已经结束
 
+    state_and_action = []
+    if timer % 1 == 0:
+        a = copy.deepcopy(s_t)
+        a.append(action_index)
+        state_and_action.append(a)
+        tocsv(state_and_action, '/Users/Ocean/Documents/Git/ECOC-PTP/last_three_1.csv')
+
     if timer % 1 == 0:
         sss = 'time_step {}/ state {}/ Epsilon {:.2f}/ action {}/ reward {}/ Q_MAX {:e}/'.format(
             timer, state, epsilon, action_index, r_t, np.max(readout_t)
         )
         print(sss)
-        f = open('/Users/Ocean/Documents/Git/ECOC-PTP/log_file02.txt', 'a')
+        f = open('/Users/Ocean/Documents/Git/ECOC-PTP/log_file_instant.txt', 'a')
         f.write(sss + '\n')
         f.close()
 
@@ -313,9 +329,9 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
                        'time_r': time_slot_r}
 
         data_loss = pd.DataFrame(data_loss)
-        data_loss.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_loss', index=False)
+        data_loss.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_loss_instant', index=False)
         data_reward = pd.DataFrame(data_reward)
-        data_reward.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_reward')
+        data_reward.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_reward_instant')
 
 
 

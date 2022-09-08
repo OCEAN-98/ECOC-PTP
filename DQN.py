@@ -7,6 +7,8 @@ import pandas as pd
 import os
 from sklearn.utils import shuffle
 from itertools import product
+import csv
+
 
 def choworst(a, list):
     worst_list = []
@@ -125,7 +127,7 @@ from csv import reader
 
 
 #
-with open('/Users/Ocean/Documents/Git/ECOC-PTP/data_shuffle.csv', 'r') as csv_file:
+with open('/Users/Ocean/Documents/Git/ECOC-PTP/data_back_07.csv', 'r') as csv_file:
     csv_reader = reader(csv_file)
     # Passing the cav_reader object to list() to get a list of lists
     list_of_rows = list(csv_reader)
@@ -138,23 +140,36 @@ for i in range(len(list_of_rows)):
         x = float(ii)
         shuffle_exe[i].append(x)
 
+print(shuffle_exe)
 
-with open('/Users/Ocean/Documents/Git/ECOC-PTP/data.csv', 'r') as csv_file_1:
+
+with open('/Users/Ocean/Documents/Git/ECOC-PTP/data_0903_total.csv', 'r') as csv_file_1:
     csv_reader_1 = reader(csv_file_1)
     # Passing the cav_reader object to list() to get a list of lists
     list_of_rows_1 = list(csv_reader_1)
+
 # print(list_of_rows)
 
 worst_file = []
 for i in range(len(list_of_rows_1)):
     worst_file.append([])
     for ii in list_of_rows_1[i]:
+        # print(ii)
         x = float(ii)
         worst_file[i].append(x)
 
 worststate = []
 for i in worst_file:
     worststate.append(i[:16])
+
+print(worststate)
+
+def tocsv(list, file):
+    for i in range(len(list)):
+        f = open(file, 'a', newline='')
+        writer = csv.writer(f)
+        writer.writerow(list[i])
+        f.close()
 
 
 def matrix_to_vector(matrix):
@@ -170,7 +185,7 @@ class Net(nn.Module):
 
         self.fc1 = nn.Linear(17, 32)
         self.fc2 = nn.Linear(32, 32)
-        self.fc3 = nn.Linear(32, 3)
+        self.fc3 = nn.Linear(32, 10)
 
     def forward(self, s1): # 21 是剩下两个state的值， 记得在runprocess里调用的时候，输入先变成张量
         # x = torch.cat((s0, s1), 1)
@@ -194,28 +209,29 @@ import numpy as np
 import torch
 import pandas as pd
 
-ACTIONS = 3 # action个数， 贪婪算法
-GAMMA = 0.99 # 衰减率
-INITIAL_EPSILON = 0.6
+ACTIONS = 10 # action个数， 贪婪算法
+GAMMA = 0.8 # 衰减率
+INITIAL_EPSILON = 0.5
 FINAL_EPSILON = 0.001
-REPLAY_MOMERY = 100 #1000
-BATCH = 80 #50
-OBSERVE = 1000 #1000
-EXPLORE = 1500 #6000
-TRAIN = 2500 #3000
+REPLAY_MOMERY = 2000 #1000
+BATCH = 200 #50
+OBSERVE = 2000 #1000
+EXPLORE = 5000 #6000
+TRAIN = 4000 #3000
 
 net = Net() # 神经网络
 net.init()
 # net.cuda()
 criterion = nn.MSELoss() #.cuda()
-optimizer = torch.optim.Adam(net.parameters(), lr=1e-4)
+optimizer = torch.optim.Adam(net.parameters(), lr=1e-5)
 
 # Offload = stepgo(301, 6)
 D = []
 # newlist = [] # 10000行数据
 
 s_t = shuffle_exe[0][:16]
-print(worst_file[0])
+
+# print(worst_file[0])
 
 
 epsilon = INITIAL_EPSILON
@@ -225,6 +241,8 @@ loss_value = []
 reward = []
 time_slot_l = []
 time_slot_r = []
+time = shuffle_exe[0][-1] * 5
+length = 6
 # print(s_t)
 # if [1.0, 1.0, 1, 1.0, 1, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1, 0.0, 1.0] in worst_file:
 #     print(True)
@@ -234,12 +252,14 @@ time_slot_r = []
 
 while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一个很长的list，注意有两个卷积网，需要分几个S出来
     # print(s_t)
-    length = 6
-    time = random.randrange(1, length)
+
+        # random.randrange(1, length)
+
     # print(s_t)
     worst_situaction = choworst(time, s_t)
     # print(worst_situaction)
     x = copy.deepcopy(worst_situaction)
+    # x[-1] = x[-1] / 5
     # if x in worststate:
     #     print(True)
     s_t_copy = copy.deepcopy(s_t)
@@ -250,7 +270,7 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
     # readout = readout.cpu() # readout是一个二维向量，分别是Q值和对应的action选择
     readout_t = readout.data.numpy()
 
-    a_t = list(np.zeros(3))
+    a_t = list(np.zeros(10))
     action_index = 0
     if random.random() <= epsilon:
         action_index = random.randrange(ACTIONS) # 随机选择行动
@@ -260,18 +280,26 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
 
     r_t = 0
 
-
+    check_debug_1 = 0
+    check_debug_2 = 0
+    # print(x)
+    # print(len(worststate))
     for i in range(len(worststate)):
         # print(i)
         # print(x)
         # print(x + [action_index + 1])
         # print(i)
         # print(x)
-
         # if check(x , worststate[i]):
         if x == worststate[i]:
             # print('abc')
             r_t = worst_file[i][16 + action_index]
+            check_debug_1 = worststate[i]
+            check_debug_2 = x
+
+    # if r_t == 0:
+        # print(check_debug_1)
+        # print(check_debug_2)
             # print(r_t)
             # print(r_t)
         # break
@@ -283,7 +311,7 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
         epsilon -= (INITIAL_EPSILON - FINAL_EPSILON) / EXPLORE
 
     s_t1 = shuffle_exe[timer][:16]
-    time_1 = random.randrange(1, length)
+    time_1 = random.randrange(1, length)/5
     s_t1_copy = copy.deepcopy(s_t1)
     s_t1_copy.append(time_1)
 
@@ -339,12 +367,12 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
     #     Vect = 0
 
     s_t = shuffle_exe[timer][:16]
+    time = shuffle_exe[timer][-1] * 5
 
     gotta = {'net': net.state_dict(), 'optimizer':optimizer.state_dict()}
 
-    # if timer % 10000 == 0:  # == (OBSERVE + EXPLORE + TRAIN):
-    #     torch.save(gotta, '/Users/Ocean/Library/Mobile Documents/com~apple~CloudDocs/Documents/TaskOffloading/Code/DQL/Results/parameters02')
-
+    if timer % 1 == 0:  # == (OBSERVE + EXPLORE + TRAIN):
+        torch.save(gotta, '/Users/Ocean/Documents/Git/ECOC-PTP/parameters_long')
 
     if timer <= OBSERVE:
         state = 'observe'
@@ -358,13 +386,20 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
             timer, state, epsilon, action_index, r_t, np.max(readout_t)
         )
         print(sss)
-        f = open('/Users/Ocean/Documents/Git/ECOC-PTP/log_file02.txt', 'a')
+        f = open('/Users/Ocean/Documents/Git/ECOC-PTP/log_file_long.txt', 'a')
         f.write(sss + '\n')
         f.close()
 
     if timer % 1 == 0:
         time_slot_r.append(timer)
         reward.append(r_t)
+
+    state_and_action = []
+    if timer % 1 == 0:
+        a = copy.deepcopy(s_t)
+        a.append(action_index)
+        state_and_action.append(a)
+        tocsv(state_and_action, '/Users/Ocean/Documents/Git/ECOC-PTP/last_three_2.csv')
 
     if timer % 1 == 0:
         data_loss = {'loss': loss_value,
@@ -373,9 +408,9 @@ while timer < (OBSERVE + EXPLORE + TRAIN): # 把输出换成numpy格式，是一
                        'time_r': time_slot_r}
 
         data_loss = pd.DataFrame(data_loss)
-        data_loss.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_loss', index=False)
+        data_loss.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_loss_long', index=False)
         data_reward = pd.DataFrame(data_reward)
-        data_reward.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_reward')
+        data_reward.to_csv('/Users/Ocean/Documents/Git/ECOC-PTP/data_reward_long')
 
 
 
